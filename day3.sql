@@ -73,7 +73,7 @@ SELECT s.name,
                     WHERE s.id = a.service
                       AND tstzrange(slot,slot + s.duration) && a.period
                   )
-   AND extract(isodow FROM slot) = array_position(ARRAY['mon', 'tue', 'wed', 'thu', 'fri', 'sat','sun'],r.dow)
+   AND to_char(slot,'dy') = r.dow
 )
 SELECT name, practitioner, duration, period
   FROM free
