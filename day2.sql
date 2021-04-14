@@ -9,7 +9,7 @@ WITH RECURSIVE t AS (
     SELECT t.root,
            ch.id
       FROM organization ch
-     INNER JOIN t ON ch.parent = t.id
+      JOIN t ON ch.parent = t.id
 ), r AS (
 SELECT root,
        count(*) cnt
@@ -24,7 +24,7 @@ SELECT r.*,
 SELECT name,
        cnt
   FROM q
- INNER JOIN organization o ON o.id = q.root
+  JOIN organization o ON o.id = q.root
  WHERE rnk = 1;
 
 -- Materialized path
@@ -39,7 +39,7 @@ WITH RECURSIVE t AS
     SELECT ch.id,
            t.path || t.id
       FROM t
-     INNER JOIN organization ch ON ch.parent = t.id
+      JOIN organization ch ON ch.parent = t.id
 )
 UPDATE organization o
    SET path = t.path
