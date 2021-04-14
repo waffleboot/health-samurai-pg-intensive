@@ -65,9 +65,9 @@ SELECT s.name,
        rank() OVER (PARTITION BY s.id ORDER BY slot) n
   FROM service s
   JOIN schedule tt ON s.id = tt.service
-  JOIN jsonb_to_recordset(tt.rule) AS r(dow text, start time, "end" time) ON true
-  JOIN generate_series(tt.start,tt.end,'1 day') AS days ON to_char(days,'dy') = r.dow,
-       generate_series(days + r.start,days + r.end - s.duration,s.duration) AS slot
+  JOIN jsonb_to_recordset(tt.rule) r (dow text, start time, "end" time) ON true
+  JOIN generate_series(tt.start,tt.end,'1 day') days ON to_char(days,'dy') = r.dow,
+       generate_series(days + r.start,days + r.end - s.duration,s.duration) slot
  WHERE NOT EXISTS (SELECT *
                      FROM appointment a
                     WHERE s.id = a.service
