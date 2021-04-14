@@ -55,7 +55,7 @@ values
 -- )
 -- select * from t
 
--- EXPLAIN
+EXPLAIN ANALYZE
 WITH free AS
 (
 SELECT s.name,
