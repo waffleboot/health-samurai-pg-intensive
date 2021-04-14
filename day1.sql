@@ -20,9 +20,9 @@ create view lesson as
 WITH q AS
 (
 SELECT 0 id
- UNION
+ UNION ALL
 SELECT 10001
- UNION
+ UNION ALL
 SELECT id FROM gaps
 ),
 t AS
