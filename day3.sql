@@ -68,8 +68,7 @@ SELECT s.name,
   JOIN jsonb_to_recordset(tt.rule) AS r(dow text, start time, "end" time) ON true
   JOIN generate_series(tt.start,tt.end,'1 day') AS days ON to_char(days,'dy') = r.dow,
        generate_series(days + r.start,days + r.end - s.duration,s.duration) AS slot
- WHERE tstzrange(slot::date + r.start,slot::date  + r.end) @> tstzrange(slot,slot + s.duration)
-   AND NOT EXISTS (SELECT *
+ WHERE NOT EXISTS (SELECT *
                      FROM appointment a
                     WHERE s.id = a.service
                       AND tstzrange(slot,slot + s.duration) && a.period
