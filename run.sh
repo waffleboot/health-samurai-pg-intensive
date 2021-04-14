@@ -1,4 +1,4 @@
 #!/bin/bash
 
-psql -U postgres -f /opt/host/rank.sql
+psql -U postgres -f /opt/host/day3.sql
 
