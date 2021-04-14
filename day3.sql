@@ -55,23 +55,29 @@ values
 -- )
 -- select * from t
 
-select s.name,
+-- EXPLAIN
+WITH free AS
+(
+SELECT s.name,
        s.practitioner,
        s.duration,
-       tsrange(slot,slot+s.duration)
-       --d + s.duration, a.period
-  from service s, 
-       schedule tt, 
+       tsrange(slot,slot+s.duration) period,
+       rank() OVER (PARTITION BY s.id ORDER BY slot) n
+  FROM service s
+  JOIN schedule tt ON s.id = tt.service,
        generate_series(tt.start,tt.end - s.duration,s.duration) as slot,
-       appointment a, 
-       jsonb_to_recordset(tt.rule) as r(dow text, start time, "end" time)
- where s.id = 1
-   and s.id = tt.service
-   and s.id = a.service
-   and not tstzrange(slot,slot + s.duration) && a.period
-   and r.start <= slot::time
-   and (slot + s.duration)::time <= r.end
-   and extract(isodow from slot) = array_position(ARRAY['mon', 'tue', 'wed', 'thu', 'fri', 'sat','sun'],dow);
+       jsonb_to_recordset(tt.rule) AS r(dow text, start time, "end" time)
+ WHERE tstzrange(slot::date + r.start,slot::date  + r.end) @> tstzrange(slot,slot + s.duration)
+   AND NOT EXISTS (SELECT *
+                     FROM appointment a
+                    WHERE s.id = a.service
+                      AND tstzrange(slot,slot + s.duration) && a.period
+                  )
+   AND extract(isodow FROM slot) = array_position(ARRAY['mon', 'tue', 'wed', 'thu', 'fri', 'sat','sun'],r.dow)
+)
+SELECT name, practitioner, duration, period
+  FROM free
+ WHERE n <= 5;
 
 -- select * from appointment where service = 1;
    
