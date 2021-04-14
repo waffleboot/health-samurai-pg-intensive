@@ -1,4 +1,0 @@
-docker-compose up -d
-psql -U postgres -f /opt/host/gaps.sql
-docker exec -it hs-db bash
-docker-compose down
