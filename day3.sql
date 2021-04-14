@@ -55,20 +55,20 @@ values
 -- )
 -- select * from t
 
-EXPLAIN ANALYZE
+-- EXPLAIN ANALYZE
 WITH free AS
 (
 SELECT s.name,
        s.practitioner,
        s.duration,
-       tsrange(slot,slot+s.duration) period,
+       tstzrange(slot,slot+s.duration) period,
        rank() OVER (PARTITION BY s.id ORDER BY slot) n
   FROM service s
-  JOIN schedule tt ON s.id = tt.service,
-       generate_series(tt.start,tt.end - s.duration,s.duration) as slot,
-       jsonb_to_recordset(tt.rule) AS r(dow text, start time, "end" time)
+  JOIN schedule tt ON s.id = tt.service
+  JOIN jsonb_to_recordset(tt.rule) AS r(dow text, start time, "end" time) ON true
+  JOIN generate_series(tt.start,tt.end,'1 day') AS days ON to_char(days,'dy') = r.dow,
+       generate_series(days + r.start,days + r.end - s.duration,s.duration) AS slot
  WHERE tstzrange(slot::date + r.start,slot::date  + r.end) @> tstzrange(slot,slot + s.duration)
-   AND to_char(slot,'dy') = r.dow
    AND NOT EXISTS (SELECT *
                      FROM appointment a
                     WHERE s.id = a.service
@@ -77,7 +77,7 @@ SELECT s.name,
 )
 SELECT name, practitioner, duration, period
   FROM free
- WHERE n <= 5;
+ WHERE n < 6;
 
 -- select * from appointment where service = 1;
    
