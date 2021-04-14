@@ -68,12 +68,12 @@ SELECT s.name,
        generate_series(tt.start,tt.end - s.duration,s.duration) as slot,
        jsonb_to_recordset(tt.rule) AS r(dow text, start time, "end" time)
  WHERE tstzrange(slot::date + r.start,slot::date  + r.end) @> tstzrange(slot,slot + s.duration)
+   AND to_char(slot,'dy') = r.dow
    AND NOT EXISTS (SELECT *
                      FROM appointment a
                     WHERE s.id = a.service
                       AND tstzrange(slot,slot + s.duration) && a.period
                   )
-   AND to_char(slot,'dy') = r.dow
 )
 SELECT name, practitioner, duration, period
   FROM free
