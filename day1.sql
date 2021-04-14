@@ -27,7 +27,7 @@ SELECT id FROM gaps
 ),
 t AS
 (
-    SELECT id + 1 f, lead(id) OVER(ORDER BY id) n FROM q
+    SELECT id + 1 f, lead(id) OVER() n FROM q ORDER BY id
 )
 SELECT f, n - 1 t FROM t WHERE f < n;
 
