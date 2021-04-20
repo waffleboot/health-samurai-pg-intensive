@@ -166,23 +166,21 @@ WITH RECURSIVE keys AS
            resource
       FROM test_patient
      UNION ALL
-    SELECT coalesce(o.key,a.key),
+    SELECT CASE WHEN o.good THEN keys.pth||array[o.key] ELSE keys.pth END,
            o.good,
            coalesce(o.value, a.value)
       FROM keys,
-   lateral (VALUES (null::text[],false,null::jsonb)
+   lateral (VALUES (null,false,null::jsonb)
              UNION ALL 
-            SELECT keys.pth||array[key],
+            SELECT key,
                    true,
                    value
               FROM jsonb_each(resource)
              WHERE jsonb_typeof(resource) = 'object') o(key,good,value),
-   lateral (VALUES (null::text[],null::jsonb) 
+   lateral (VALUES (null::jsonb) 
              UNION ALL 
-            SELECT keys.pth,
-                   value 
-              FROM jsonb_array_elements(resource) 
-             WHERE jsonb_typeof(resource) = 'array') a(key,value)
+            SELECT jsonb_array_elements(resource) 
+             WHERE jsonb_typeof(resource) = 'array') a(value)
     WHERE keys.resource IS NOT NULL
 ),
 total AS
