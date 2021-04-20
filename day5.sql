@@ -167,23 +167,22 @@ WITH RECURSIVE keys AS
       FROM test_patient
      UNION ALL
     SELECT coalesce(o.key,a.key),
-           coalesce(o.good,a.good),
+           o.good,
            coalesce(o.value, a.value)
       FROM keys,
-   lateral (VALUES (null::text[],null::bool,null::jsonb)
+   lateral (VALUES (null::text[],false,null::jsonb)
              UNION ALL 
             SELECT keys.pth||array[key],
                    true,
                    value
               FROM jsonb_each(resource)
              WHERE jsonb_typeof(resource) = 'object') o(key,good,value),
-   lateral (VALUES (null::text[],null::bool,null::jsonb) 
+   lateral (VALUES (null::text[],null::jsonb) 
              UNION ALL 
             SELECT keys.pth,
-                   false,
                    value 
               FROM jsonb_array_elements(resource) 
-             WHERE jsonb_typeof(resource) = 'array') a(key,good,value)
+             WHERE jsonb_typeof(resource) = 'array') a(key,value)
     WHERE keys.resource IS NOT NULL
 ),
 total AS
