@@ -162,26 +162,23 @@ COPY test_patient(resource) FROM '/opt/host/patient.csv' (FORMAT csv , delimiter
 WITH RECURSIVE keys AS
 (
     SELECT null::text[] pth,
-           false good,
-           resource
+           resource,
+           null typ
       FROM test_patient
      UNION ALL
-    SELECT CASE WHEN o.good THEN keys.pth||array[o.key] ELSE keys.pth END,
-           o.good,
-           coalesce(o.value, a.value)
+    SELECT nxt.*
       FROM keys,
-   lateral (VALUES (null,false,null::jsonb)
+      lateral (
+            SELECT keys.pth||array[(jsonb_each(resource)).key],
+                   (jsonb_each(resource)).value,
+                   'obj'
+             WHERE jsonb_typeof(resource) = 'object'
              UNION ALL 
-            SELECT key,
-                   true,
-                   value
-              FROM jsonb_each(resource)
-             WHERE jsonb_typeof(resource) = 'object') o(key,good,value),
-   lateral (VALUES (null::jsonb) 
-             UNION ALL 
-            SELECT jsonb_array_elements(resource) 
-             WHERE jsonb_typeof(resource) = 'array') a(value)
-    WHERE keys.resource IS NOT NULL
+            SELECT keys.pth,
+                   jsonb_array_elements(resource),
+                   null
+             WHERE jsonb_typeof(resource) = 'array'
+     ) nxt
 ),
 total AS
 (
@@ -193,7 +190,7 @@ SELECT pth,
        (count(*)/ttl::float)*100 persent
   FROM keys,
        total
- WHERE good
+ WHERE typ = 'obj'
  GROUP BY pth, ttl
  ORDER BY persent DESC;
 
