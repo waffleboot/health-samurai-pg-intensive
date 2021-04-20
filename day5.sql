@@ -159,35 +159,46 @@ COPY test_patient(resource) FROM '/opt/host/patient.csv' (FORMAT csv , delimiter
 
 -- select null, resource from test_patient;
 
-with recursive keys as (
-    select null::text[] pth, '{}'::text[] p, resource from test_patient
-     union all
-    select coalesce(o.k,a.k),
-           coalesce(o.p,a.p),
-           coalesce(o.v, a.v)
-      from keys,
-   lateral (values (null::text[],null::text[],null::jsonb) 
-         union all 
-            select keys.p||array[o.key],
-                   keys.p||array[o.key],
-                   o.value from jsonb_each(resource) o where jsonb_typeof(resource) = 'object') o(k,p,v),
-  lateral (values (null::text[],null::text[],null::jsonb) 
-        union all 
-           select null,
-                  keys.p,
-                  a.value 
-                  from jsonb_array_elements(resource) a where jsonb_typeof(resource) = 'array') a(k,p,v)
-    where keys.resource is not null
+WITH RECURSIVE keys AS
+(
+    SELECT null::text[] pth,
+           false good,
+           resource
+      FROM test_patient
+     UNION ALL
+    SELECT coalesce(o.key,a.key),
+           coalesce(o.good,a.good),
+           coalesce(o.value, a.value)
+      FROM keys,
+   lateral (VALUES (null::text[],null::bool,null::jsonb)
+             UNION ALL 
+            SELECT keys.pth||array[key],
+                   true,
+                   value
+              FROM jsonb_each(resource)
+             WHERE jsonb_typeof(resource) = 'object') o(key,good,value),
+   lateral (VALUES (null::text[],null::bool,null::jsonb) 
+             UNION ALL 
+            SELECT keys.pth,
+                   false,
+                   value 
+              FROM jsonb_array_elements(resource) 
+             WHERE jsonb_typeof(resource) = 'array') a(key,good,value)
+    WHERE keys.resource IS NOT NULL
 ),
-total as
-	 (
-	   select count(*) ttl from test_patient
-	 )
-select pth, count(*), (count(*)/ttl::float)*100 persent
-     from keys, total
-     where pth is not null
-    group by pth, ttl
-    order by persent desc;
+total AS
+(
+	SELECT count(*) ttl
+      FROM test_patient
+)
+SELECT pth,
+       count(*),
+       (count(*)/ttl::float)*100 persent
+  FROM keys,
+       total
+ WHERE good
+ GROUP BY pth, ttl
+ ORDER BY persent DESC;
 
 -- select count(*) ttl from "organization";
       
