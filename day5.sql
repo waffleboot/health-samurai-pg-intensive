@@ -163,7 +163,7 @@ WITH RECURSIVE keys AS
 (
     SELECT null::text[] pth,
            resource,
-           null typ
+           false good
       FROM test_patient
      UNION ALL
     SELECT nxt.*
@@ -171,7 +171,7 @@ WITH RECURSIVE keys AS
       lateral (
             SELECT keys.pth||array[(jsonb_each(resource)).key],
                    (jsonb_each(resource)).value,
-                   'obj'
+                   true
              WHERE jsonb_typeof(resource) = 'object'
              UNION ALL 
             SELECT keys.pth,
@@ -190,7 +190,7 @@ SELECT pth,
        (count(*)/ttl::float)*100 persent
   FROM keys,
        total
- WHERE typ = 'obj'
+ WHERE good
  GROUP BY pth, ttl
  ORDER BY persent DESC;
 
