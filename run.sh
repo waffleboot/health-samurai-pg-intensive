@@ -1,4 +1,4 @@
 #!/bin/bash
 
-psql -U postgres -f /opt/host/day5.sql
+psql -U postgres -q -x -f /opt/host/day7.sql
 
