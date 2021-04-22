@@ -21,6 +21,9 @@ insert into test_patient values ($$
 }$$);
 -- select jsonb_pretty(resource) from test_patient;
 
+-- для каждого ресурса вытащить в виде json массива все пути до telecom[*].value, оставив только telecom mobile +7
+-- дальше каждый ресурс рекурсивно обновлять через jsonb_set, строя пути до value, на каждом шаге рекурсии json массив уменьшается
+-- для обновления всегда берется первый элемент и рекурсия пока массив не иссякнет
 -- t3 := resource | json [ pth ] where pth := { "pth" : ["telecom",2,"value"] , "value" : "+7..." }
 WITH RECURSIVE t3 AS (
 
