@@ -24,13 +24,7 @@ insert into test_patient values ($$
 
 SELECT resource || (SELECT jsonb_build_object('telecom', jsonb_agg(
        CASE
-       WHEN t.value @?
-       $$
-           $ ? (
-               @.use == "mobile" && 
-               @.system == "phone" && 
-               @.value like_regex "^[[:space:]]*[+][[:space:]]*7")
-       $$
+       WHEN t.value @> '{"use":"mobile","system":"phone"}'
        THEN t.value || jsonb_build_object(
            'value',
            regexp_replace(
