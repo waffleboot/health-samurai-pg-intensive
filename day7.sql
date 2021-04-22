@@ -21,20 +21,19 @@ insert into test_patient values ($$
 }$$);
 -- select jsonb_pretty(resource) from test_patient;
 
--- t3 := resource | json [ pth ] where pth := { "pth" : ["telecom",2,"value"] , "value" : "+7" }
+-- t3 := resource | json [ pth ] where pth := { "pth" : ["telecom",2,"value"] , "value" : "+7..." }
 WITH RECURSIVE t3 AS (
 
     SELECT tp.resource,
-           jap.pths
+           jp.pths
       FROM test_patient tp,
-   lateral /*jap*/ (
+   lateral /*jp*/ (
 
         WITH RECURSIVE keys AS
         (
             SELECT '[]'::jsonb pth,
                    tp.resource,
-                   null::bool telecom,
-                   null::bool mobile,
+                   null::bool telecom_mobile,
                    null::bool upd
              UNION ALL
             SELECT kv.*
@@ -43,40 +42,40 @@ WITH RECURSIVE t3 AS (
                     SELECT keys.pth||to_jsonb(t.key),
                            t.value,
                            t.key = 'telecom',
-                           null,
-                           keys.mobile AND t.key = 'value' AND starts_with(t.value #>> '{}', '+7') upd
+                           keys.telecom_mobile AND t.key = 'value' AND starts_with(t.value #>> '{}', '+7') upd
                       FROM jsonb_each(resource) t
                      WHERE jsonb_typeof(resource) = 'object'
                      UNION ALL 
                     SELECT keys.pth||to_jsonb(t.pos-1),
                            t.element,
-                           null,
-                           keys.telecom AND t.element @> '{"use":"mobile","system":"phone"}' mobile,
+                           keys.telecom_mobile AND t.element @> '{"use":"mobile","system":"phone"}',
                            null
                       FROM jsonb_array_elements(resource) WITH ordinality t(element,pos)
                      WHERE jsonb_typeof(resource) = 'array'
             ) kv
         )
+        -- filter by upd and aggregate to [ { "pth" : ["telecom",2,"value"] , "value" : "+7..." } ]
         SELECT jsonb_agg(jsonb_build_object('pth',pth,'value',resource)) pths
           FROM keys
          WHERE upd
 
-      ) jap
+      ) jp
     
-    union all
+    UNION ALL
 
-    select jsonb_set(t3.resource, (select array_agg(t) from jsonb_array_elements_text(t3.pths -> 0 -> 'pth') t), 
-             to_jsonb (overlay  ( (t3.pths -> 0 ->> 'value')    placing '8'  from 1 for  2      ))
+    -- get first element from json array, use it pth as path, replace value in resource and run it again on rest elements
+    SELECT jsonb_set(
+               t3.resource,
+               (SELECT array_agg(t) FROM jsonb_array_elements_text(t3.pths -> 0 -> 'pth') t), -- text[]
+               to_jsonb(overlay((t3.pths -> 0 ->> 'value') placing '8' from 1 for 2))
            ),
            t3.pths - 0
-      from t3
-     where t3.pths != '[]'
+      FROM t3
+     WHERE t3.pths != '[]'
 )
-select resource
-  from t3
- where t3.pths = '[]';
--- select *
---   from t3;
+SELECT jsonb_pretty(resource)
+  FROM t3
+ WHERE t3.pths = '[]';
 
 
 
