@@ -7,6 +7,10 @@ services:
       - 127.0.0.1:5400:5432
     environment:
       POSTGRES_PASSWORD: postgres
+    deploy:
+      resources:
+        limits:
+          cpus: '0.1'
     volumes:
       - "./pgdata:/data/"
       - "./:/opt/host/"
