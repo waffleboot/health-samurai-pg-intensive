@@ -26,7 +26,15 @@ SELECT CASE
  LIMIT 1;
 
 EXPLAIN (analyze, costs off, timing off)
-SELECT coalesce(n, '{}'),
+SELECT CASE
+       WHEN n IS NOT NULL THEN
+            concat_ws(' ',
+                (SELECT string_agg(q, ' ') FROM jsonb_array_elements_text(n -> 'prefix') q),
+                (SELECT string_agg(q, ' ') FROM jsonb_array_elements_text(n -> 'given') q),
+                n ->> 'family',
+                (SELECT string_agg(q, ' ') FROM jsonb_array_elements_text(n -> 'suffix') q))
+       ELSE 'anonymous'
+       END,
        weight(o.resource) w
   FROM observation o
   JOIN patient p ON p.id = o.resource #>> '{subject,id}'
