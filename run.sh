@@ -1,4 +1,4 @@
 #!/bin/bash
 
-psql -U postgres -q -x -f /opt/host/day7.sql
+psql -U postgres -q -f /opt/host/day8.sql fhir
 
