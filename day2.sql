@@ -47,4 +47,4 @@ UPDATE organization o
  WHERE t.id = o.id;
 
 -- Use materialized path
-SELECT * FROM organization WHERE 2 = ANY (path);
+SELECT * FROM organization WHERE path && '{2}';
