@@ -1,17 +1,17 @@
 
 -- DROP INDEX encounter_period_idx;
--- DROP FUNCTION encounter_period(date,date);
+-- DROP FUNCTION encounter_period(timestamptz,timestamptz);
 -- DROP FUNCTION to_date(text);
 
-CREATE FUNCTION to_date(x text) RETURNS date AS $$
+CREATE FUNCTION to_date (x text) RETURNS timestamptz AS $$
 BEGIN
   RETURN x;
 END;
 $$ LANGUAGE plpgsql IMMUTABLE;
 
-CREATE FUNCTION encounter_period (x date, y date) RETURNS daterange AS $$
+CREATE FUNCTION encounter_period (x timestamptz, y timestamptz) RETURNS tstzrange AS $$
 BEGIN
-  RETURN daterange(x,y,'[]');
+  RETURN tstzrange(x,y);
 END;
 $$ LANGUAGE plpgsql IMMUTABLE;
 
@@ -21,12 +21,6 @@ CREATE INDEX encounter_period_idx ON encounter USING gist (
          to_date(resource #>> '{period,end}'))
 );
 
--- SELECT jsonb_pretty(resource -> 'period'),
---        encounter_period(resource)
---   FROM encounter
---  WHERE encounter_period(resource #>> '{period,start}',resource #>> '{period,end}') @> '2020-01-01'::date
---  LIMIT 1;
-
 SELECT count(*)
   FROM encounter
  WHERE encounter_period(
@@ -35,7 +29,7 @@ SELECT count(*)
 ;
 
 explain (analyze, costs off, timing off)
-SELECT count(*)
+SELECT *
   FROM encounter
  WHERE encounter_period(
          to_date(resource #>> '{period,start}'),
