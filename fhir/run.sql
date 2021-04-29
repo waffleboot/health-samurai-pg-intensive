@@ -1,8 +1,8 @@
 
--- DROP INDEX encounter_period_idx;
--- DROP FUNCTION encounter_period(timestamptz,timestamptz);
--- DROP FUNCTION encounter_period(text,text);
--- DROP FUNCTION to_date(text);
+DROP INDEX encounter_period_idx;
+DROP FUNCTION encounter_period(timestamptz,timestamptz);
+DROP FUNCTION encounter_period(text,text);
+DROP FUNCTION to_date(text);
 
 CREATE FUNCTION to_date (x text) RETURNS timestamptz AS $$
 BEGIN
