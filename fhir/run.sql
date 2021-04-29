@@ -1,5 +1,6 @@
 
--- DROP FUNCTION encounter_period(date,date) CASCADE;
+-- DROP INDEX encounter_period_idx;
+-- DROP FUNCTION encounter_period(date,date);
 -- DROP FUNCTION to_date(text);
 
 CREATE FUNCTION to_date(x text) RETURNS date AS $$
@@ -30,7 +31,7 @@ SELECT count(*)
   FROM encounter
  WHERE encounter_period(
          to_date(resource #>> '{period,start}'),
-         to_date(resource #>> '{period,end}')) && '[2020-01-01,2020-02-01)'::daterange
+         to_date(resource #>> '{period,end}')) && '[2020-01-01,2020-02-01)'
 ;
 
 explain (analyze, costs off, timing off)
@@ -38,5 +39,5 @@ SELECT count(*)
   FROM encounter
  WHERE encounter_period(
          to_date(resource #>> '{period,start}'),
-         to_date(resource #>> '{period,end}')) && '[2020-01-01,2020-02-01)'::daterange
+         to_date(resource #>> '{period,end}')) && '[2020-01-01,2020-02-01)'
 ;
