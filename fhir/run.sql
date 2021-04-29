@@ -33,7 +33,17 @@ SELECT count(*)
          to_date(resource #>> '{period,end}')) && '[2020-01-01,2020-02-01)'
 ;
 
-explain (analyze, costs off, timing off)
+explain --(analyze, costs off, timing off)
+SELECT *
+  FROM encounter
+ WHERE encounter_period(
+         to_date(resource #>> '{period,start}'),
+         to_date(resource #>> '{period,end}')) && '[2020-01-01,2020-02-01)'
+;
+
+SET enable_indexscan = off;
+
+explain --(analyze, costs off, timing off)
 SELECT *
   FROM encounter
  WHERE encounter_period(
