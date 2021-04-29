@@ -22,6 +22,10 @@ CREATE INDEX encounter_period_idx ON encounter USING gist (
          to_date(resource #>> '{period,end}'))
 );
 
+-- VACUUM FULL encounter;
+-- ANALYZE encounter;
+-- ANALYZE encounter_period_idx;
+
 SELECT count(*)
   FROM encounter
  WHERE encounter_period(
@@ -36,3 +40,5 @@ SELECT *
          to_date(resource #>> '{period,start}'),
          to_date(resource #>> '{period,end}')) && '[2020-01-01,2020-02-01)'
 ;
+
+select relpages from pg_class where relname = 'encounter_period_idx';
