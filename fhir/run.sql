@@ -1,47 +1,29 @@
 
-ALTER TABLE observation ADD patient_id text GENERATED ALWAYS AS (resource #>> '{subject,id}') STORED;
-
-CREATE FUNCTION weight (resource jsonb) RETURNS real AS $$
+CREATE FUNCTION encounter_period (resource jsonb) RETURNS daterange AS $$
+DECLARE
+  s date := (resource #>> '{period,start}');
+  e date := (resource #>> '{period,end}');
 BEGIN
-  RETURN resource #>> '{valueQuantity,value}';
+  RETURN daterange(
+      (date_trunc('month', s))::date,
+      (date_trunc('month', e))::date,
+      '[]');
 END;
 $$ LANGUAGE plpgsql IMMUTABLE;
 
-CREATE INDEX observation_weight ON observation (weight(resource)) INCLUDE (patient_id)
- WHERE resource @> '{"code":{"coding":[{"code":"29463-7","system":"http://loinc.org"}]}}';
+CREATE INDEX encounter_period_idx ON encounter USING gist (encounter_period(resource));
 
-SELECT CASE
-       WHEN n IS NOT NULL THEN
-            concat_ws(' ',
-                (SELECT string_agg(q, ' ') FROM jsonb_array_elements_text(n -> 'prefix') q),
-                (SELECT string_agg(q, ' ') FROM jsonb_array_elements_text(n -> 'given') q),
-                n ->> 'family',
-                (SELECT string_agg(q, ' ') FROM jsonb_array_elements_text(n -> 'suffix') q))
-       ELSE 'anonymous'
-       END,
-       weight(o.resource) w
-  FROM observation o
-  JOIN patient p ON p.id = o.patient_id
-  LEFT JOIN LATERAL jsonb_path_query_first(p.resource, '$.name[*] ? (@.use == "official")') n ON true
- WHERE o.resource @> '{"code":{"coding":[{"code":"29463-7","system":"http://loinc.org"}]}}'
- ORDER BY 2 DESC
+SELECT jsonb_pretty(resource -> 'period'),
+       encounter_period(resource)
+  FROM encounter
+ WHERE encounter_period(resource) @> '2020-01-01'::date
  LIMIT 1;
 
+SELECT count(*)
+  FROM encounter
+ WHERE encounter_period(resource) @> '2020-01-01'::date;
+
 explain (analyze, costs off, timing off)
-SELECT CASE
-       WHEN n IS NOT NULL THEN
-            concat_ws(' ',
-                (SELECT string_agg(q, ' ') FROM jsonb_array_elements_text(n -> 'prefix') q),
-                (SELECT string_agg(q, ' ') FROM jsonb_array_elements_text(n -> 'given') q),
-                n ->> 'family',
-                (SELECT string_agg(q, ' ') FROM jsonb_array_elements_text(n -> 'suffix') q))
-       ELSE 'anonymous'
-       END,
-       weight(o.resource) w
-  FROM observation o
-  JOIN patient p ON p.id = o.patient_id
-  LEFT JOIN LATERAL jsonb_path_query_first(p.resource, '$.name[*] ? (@.use == "official")') n ON true
- WHERE o.resource @> '{"code":{"coding":[{"code":"29463-7","system":"http://loinc.org"}]}}'
- ORDER BY 2 DESC
- LIMIT 1
- ;
+SELECT count(*)
+  FROM encounter
+ WHERE encounter_period(resource) @> '2020-01-01'::date;
