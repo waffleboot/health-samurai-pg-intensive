@@ -1,29 +1,42 @@
 
-CREATE FUNCTION encounter_period (resource jsonb) RETURNS daterange AS $$
-DECLARE
-  s date := (resource #>> '{period,start}');
-  e date := (resource #>> '{period,end}');
+-- DROP FUNCTION encounter_period(date,date) CASCADE;
+-- DROP FUNCTION to_date(text);
+
+CREATE FUNCTION to_date(x text) RETURNS date AS $$
 BEGIN
-  RETURN daterange(
-      (date_trunc('month', s))::date,
-      (date_trunc('month', e))::date,
-      '[]');
+  RETURN x;
 END;
 $$ LANGUAGE plpgsql IMMUTABLE;
 
-CREATE INDEX encounter_period_idx ON encounter USING gist (encounter_period(resource));
+CREATE FUNCTION encounter_period (x date, y date) RETURNS daterange AS $$
+BEGIN
+  RETURN daterange(x,y,'[]');
+END;
+$$ LANGUAGE plpgsql IMMUTABLE;
 
-SELECT jsonb_pretty(resource -> 'period'),
-       encounter_period(resource)
-  FROM encounter
- WHERE encounter_period(resource) @> '2020-01-01'::date
- LIMIT 1;
+CREATE INDEX encounter_period_idx ON encounter USING gist (
+     encounter_period(
+         to_date(resource #>> '{period,start}'),
+         to_date(resource #>> '{period,end}'))
+);
+
+-- SELECT jsonb_pretty(resource -> 'period'),
+--        encounter_period(resource)
+--   FROM encounter
+--  WHERE encounter_period(resource #>> '{period,start}',resource #>> '{period,end}') @> '2020-01-01'::date
+--  LIMIT 1;
 
 SELECT count(*)
   FROM encounter
- WHERE encounter_period(resource) @> '2020-01-01'::date;
+ WHERE encounter_period(
+         to_date(resource #>> '{period,start}'),
+         to_date(resource #>> '{period,end}')) && '[2020-01-01,2020-02-01)'::daterange
+;
 
 explain (analyze, costs off, timing off)
 SELECT count(*)
   FROM encounter
- WHERE encounter_period(resource) @> '2020-01-01'::date;
+ WHERE encounter_period(
+         to_date(resource #>> '{period,start}'),
+         to_date(resource #>> '{period,end}')) && '[2020-01-01,2020-02-01)'::daterange
+;
